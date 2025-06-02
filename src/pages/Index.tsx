@@ -1,11 +1,12 @@
 
 import { useState } from "react";
-import { Calendar, Users, StickyNote, TrendingUp, Globe } from "lucide-react";
+import { Calendar, Users, StickyNote, TrendingUp } from "lucide-react";
 import Header from "@/components/Header";
 import DailyPurchases from "@/components/DailyPurchases";
 import CustomerManagement from "@/components/CustomerManagement";
 import StickyNotes from "@/components/StickyNotes";
 import Statistics from "@/components/Statistics";
+import QuickNotes from "@/components/QuickNotes";
 
 type Language = 'ar' | 'en';
 type ActiveTab = 'purchases' | 'customers' | 'notes' | 'stats';
@@ -42,7 +43,7 @@ const Index = () => {
   ];
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 font-tajawal ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className={`min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 font-tajawal ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       <Header 
         language={language} 
         setLanguage={setLanguage}
@@ -50,9 +51,9 @@ const Index = () => {
         setSelectedDate={setSelectedDate}
       />
       
-      <div className="container mx-auto px-4 py-6">
-        {/* Navigation Tabs */}
-        <div className="bg-white rounded-lg shadow-md mb-6 p-2">
+      {/* Navigation Tabs */}
+      <div className="container mx-auto px-4 py-4">
+        <div className="bg-white rounded-lg shadow-sm mb-4 p-1">
           <div className="flex space-x-1 rtl:space-x-reverse">
             {tabs.map((tab) => {
               const Icon = tab.icon;
@@ -60,14 +61,14 @@ const Index = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 rtl:space-x-reverse px-4 py-3 rounded-md transition-all duration-200 ${
+                  className={`flex items-center space-x-2 rtl:space-x-reverse px-4 py-3 rounded-md transition-all duration-200 flex-1 justify-center ${
                     activeTab === tab.id
                       ? 'bg-primary text-white shadow-md'
                       : 'text-gray-600 hover:bg-gray-100'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
-                  <span className="font-medium">{tab.label}</span>
+                  <span className="font-medium hidden sm:block">{tab.label}</span>
                 </button>
               );
             })}
@@ -75,11 +76,34 @@ const Index = () => {
         </div>
 
         {/* Content Area */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          {activeTab === 'purchases' && <DailyPurchases language={language} selectedDate={selectedDate} />}
-          {activeTab === 'customers' && <CustomerManagement language={language} />}
-          {activeTab === 'notes' && <StickyNotes language={language} />}
-          {activeTab === 'stats' && <Statistics language={language} />}
+        <div className="min-h-[calc(100vh-180px)]">
+          {activeTab === 'purchases' && (
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+              <div className="xl:col-span-3">
+                <div className="bg-white rounded-lg shadow-sm h-full">
+                  <DailyPurchases language={language} selectedDate={selectedDate} />
+                </div>
+              </div>
+              <div className="xl:col-span-1">
+                <QuickNotes language={language} />
+              </div>
+            </div>
+          )}
+          {activeTab === 'customers' && (
+            <div className="bg-white rounded-lg shadow-sm h-full">
+              <CustomerManagement language={language} />
+            </div>
+          )}
+          {activeTab === 'notes' && (
+            <div className="bg-white rounded-lg shadow-sm h-full">
+              <StickyNotes language={language} />
+            </div>
+          )}
+          {activeTab === 'stats' && (
+            <div className="bg-white rounded-lg shadow-sm h-full">
+              <Statistics language={language} />
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -22,6 +22,13 @@ export interface CustomerPurchase {
   finalTotal: number;
 }
 
+export interface Note {
+  id: string;
+  text: string;
+  completed: boolean;
+  createdAt: string;
+}
+
 export const customersData: Customer[] = [
   {
     id: '1',
@@ -36,7 +43,7 @@ export const customersData: Customer[] = [
       {
         id: '1',
         date: '2024-01-15',
-        batteryType: 'بطارية سيارة',
+        batteryType: 'بطاريات عادية',
         quantity: 5,
         price: 300,
         total: 1500,
@@ -46,7 +53,7 @@ export const customersData: Customer[] = [
       {
         id: '2',
         date: '2024-01-10',
-        batteryType: 'بطارية شاحنة',
+        batteryType: 'بطاريات جافة',
         quantity: 3,
         price: 450,
         total: 1350,
@@ -68,7 +75,7 @@ export const customersData: Customer[] = [
       {
         id: '3',
         date: '2024-01-10',
-        batteryType: 'بطارية دراجة نارية',
+        batteryType: 'بطاريات زجاج',
         quantity: 8,
         price: 300,
         total: 2400,
@@ -113,8 +120,9 @@ export const customersData: Customer[] = [
 ];
 
 export const batteryTypes = [
-  'بطارية سيارة',
-  'بطارية شاحنة', 
-  'بطارية دراجة نارية',
-  'بطارية UPS'
+  'بطاريات عادية',
+  'بطاريات جافة',
+  'بطاريات زجاج',
+  'بطاريات تعبئة',
+  'رصاص'
 ];

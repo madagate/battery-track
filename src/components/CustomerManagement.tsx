@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Search, Phone, MessageCircle, Calendar, TrendingUp, UserPlus, Filter, Eye } from "lucide-react";
+import { Search, Phone, MessageCircle, Calendar, TrendingUp, UserPlus, Filter, Eye, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,8 +50,9 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
       daysAgo: "يوم مضى",
       purchases: "مشتريات",
       sar: "ريال",
-      noCustomerSelected: "لم يتم اختيار عميل",
-      purchaseHistory: "سجل المشتريات"
+      noCustomerSelected: "اختر عميلاً لعرض التفاصيل",
+      purchaseHistory: "سجل المشتريات",
+      totalCustomers: "إجمالي العملاء"
     },
     en: {
       customerManagement: "Customer Management",
@@ -77,8 +78,9 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
       daysAgo: "days ago",
       purchases: "purchases",
       sar: "SAR",
-      noCustomerSelected: "No customer selected",
-      purchaseHistory: "Purchase History"
+      noCustomerSelected: "Select a customer to view details",
+      purchaseHistory: "Purchase History",
+      totalCustomers: "Total Customers"
     }
   };
 
@@ -148,9 +150,18 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center flex-wrap gap-4">
-        <h2 className="text-2xl font-bold text-gray-800">{t.customerManagement}</h2>
+    <div className="container mx-auto p-6 max-w-7xl">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex items-center space-x-3 rtl:space-x-reverse">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Users className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">{t.customerManagement}</h2>
+            <p className="text-gray-600">{t.totalCustomers}: {customers.length}</p>
+          </div>
+        </div>
         <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
           <DialogTrigger asChild>
             <Button className="flex items-center space-x-2 rtl:space-x-reverse">
@@ -167,28 +178,24 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Customer List with Filters */}
-        <div className="lg:col-span-1 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 rtl:space-x-reverse">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Customer List */}
+        <div className="xl:col-span-1">
+          <Card className="h-[calc(100vh-200px)]">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center space-x-2 rtl:space-x-reverse text-lg">
                 <Search className="w-5 h-5" />
                 <span>{t.customerList}</span>
               </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Input
-                placeholder={t.searchCustomers}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-              />
-              
-              <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                <Filter className="w-4 h-4" />
+              <div className="space-y-3">
+                <Input
+                  placeholder={t.searchCustomers}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                
                 <Select value={dayFilter} onValueChange={setDayFilter}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger>
                     <SelectValue placeholder={t.filterByDays} />
                   </SelectTrigger>
                   <SelectContent>
@@ -200,29 +207,38 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
                   </SelectContent>
                 </Select>
               </div>
-              
-              <div className="space-y-2 max-h-96 overflow-y-auto">
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="space-y-1 max-h-[calc(100vh-380px)] overflow-y-auto px-6 pb-6">
                 {filteredCustomers.map((customer) => {
                   const daysAgo = getDaysAgo(customer.lastPurchase);
                   return (
                     <div
                       key={customer.id}
                       onClick={() => setSelectedCustomer(customer)}
-                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                      className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
                         selectedCustomer?.id === customer.id 
-                          ? 'bg-primary/10 border-primary' 
-                          : 'hover:bg-gray-50'
+                          ? 'bg-primary/10 border-primary shadow-md' 
+                          : 'hover:bg-gray-50 border-gray-200'
                       }`}
                     >
-                      <div className="font-semibold">{customer.name}</div>
-                      <div className="text-sm text-gray-600">{customer.phone}</div>
-                      <div className="flex justify-between items-center">
-                        <div className="text-xs text-gray-500">
-                          {daysAgo} {t.daysAgo}
-                        </div>
-                        <Badge variant={daysAgo > 30 ? "destructive" : daysAgo > 15 ? "secondary" : "default"}>
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="font-semibold text-gray-800">{customer.name}</div>
+                        <Badge 
+                          variant={daysAgo > 30 ? "destructive" : daysAgo > 15 ? "secondary" : "default"}
+                          className="text-xs"
+                        >
                           {languageLabels[customer.preferredLanguage]}
                         </Badge>
+                      </div>
+                      <div className="text-sm text-gray-600 mb-1">{customer.phone}</div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-gray-500">
+                          {daysAgo} {t.daysAgo}
+                        </span>
+                        <span className="font-medium text-primary">
+                          {customer.totalAmount.toLocaleString()} {t.sar}
+                        </span>
                       </div>
                     </div>
                   );
@@ -233,76 +249,21 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
         </div>
 
         {/* Customer Details */}
-        <div className="lg:col-span-2">
+        <div className="xl:col-span-2">
           {selectedCustomer ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>{t.customerDetails}</span>
-                  <Badge variant="secondary">
+            <Card className="h-[calc(100vh-200px)]">
+              <CardHeader className="border-b">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl">{selectedCustomer.name}</CardTitle>
+                  <Badge variant="secondary" className="text-sm">
                     {languageLabels[selectedCustomer.preferredLanguage]}
                   </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="font-semibold text-gray-700">{t.name}</label>
-                      <p className="text-lg">{selectedCustomer.name}</p>
-                    </div>
-                    
-                    <div>
-                      <label className="font-semibold text-gray-700">{t.phone}</label>
-                      <p className="text-lg">{selectedCustomer.phone}</p>
-                    </div>
-                    
-                    <div>
-                      <label className="font-semibold text-gray-700">{t.lastPurchase}</label>
-                      <p className="text-lg">
-                        {new Date(selectedCustomer.lastPurchase).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
-                        <span className="text-sm text-gray-500 ml-2">
-                          ({getDaysAgo(selectedCustomer.lastPurchase)} {t.daysAgo})
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <div className="flex items-center space-x-2 rtl:space-x-reverse mb-2">
-                        <TrendingUp className="w-5 h-5 text-blue-600" />
-                        <span className="font-semibold text-blue-800">{t.totalPurchases}</span>
-                      </div>
-                      <p className="text-2xl font-bold text-blue-600">
-                        {selectedCustomer.totalPurchases} {t.purchases}
-                      </p>
-                    </div>
-                    
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <div className="flex items-center space-x-2 rtl:space-x-reverse mb-2">
-                        <span className="font-semibold text-green-800">{t.totalAmount}</span>
-                      </div>
-                      <p className="text-2xl font-bold text-green-600">
-                        {selectedCustomer.totalAmount.toLocaleString()} {t.sar}
-                      </p>
-                    </div>
-                    
-                    <div className="bg-purple-50 p-4 rounded-lg">
-                      <div className="flex items-center space-x-2 rtl:space-x-reverse mb-2">
-                        <span className="font-semibold text-purple-800">{t.averagePrice}</span>
-                      </div>
-                      <p className="text-2xl font-bold text-purple-600">
-                        {selectedCustomer.averagePrice} {t.sar}
-                      </p>
-                    </div>
-                  </div>
                 </div>
-                
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-3 pt-2">
                   <Button 
                     onClick={() => sendWhatsAppMessage(selectedCustomer)}
                     className="flex items-center space-x-2 rtl:space-x-reverse"
+                    size="sm"
                   >
                     <MessageCircle className="w-4 h-4" />
                     <span>{t.sendWhatsApp}</span>
@@ -310,12 +271,12 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
                   
                   <Dialog open={showPurchaseHistory} onOpenChange={setShowPurchaseHistory}>
                     <DialogTrigger asChild>
-                      <Button variant="outline" className="flex items-center space-x-2 rtl:space-x-reverse">
+                      <Button variant="outline" size="sm" className="flex items-center space-x-2 rtl:space-x-reverse">
                         <Eye className="w-4 h-4" />
                         <span>{t.purchaseHistory}</span>
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-4xl">
+                    <DialogContent className="max-w-5xl max-h-[80vh] overflow-auto">
                       <DialogHeader>
                         <DialogTitle>{t.purchaseHistory} - {selectedCustomer.name}</DialogTitle>
                       </DialogHeader>
@@ -323,12 +284,83 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
                     </DialogContent>
                   </Dialog>
                 </div>
+              </CardHeader>
+              <CardContent className="p-6 overflow-y-auto max-h-[calc(100vh-320px)]">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Contact Info */}
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg text-gray-800 border-b pb-2">معلومات التواصل</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                        <Phone className="w-5 h-5 text-gray-500" />
+                        <span className="text-lg">{selectedCustomer.phone}</span>
+                      </div>
+                      <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                        <Calendar className="w-5 h-5 text-gray-500" />
+                        <div>
+                          <span className="text-lg">
+                            {new Date(selectedCustomer.lastPurchase).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
+                          </span>
+                          <span className="text-sm text-gray-500 ml-2 rtl:mr-2">
+                            ({getDaysAgo(selectedCustomer.lastPurchase)} {t.daysAgo})
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Statistics Cards */}
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-blue-700">{t.totalPurchases}</p>
+                          <p className="text-2xl font-bold text-blue-800">
+                            {selectedCustomer.totalPurchases}
+                          </p>
+                        </div>
+                        <TrendingUp className="w-8 h-8 text-blue-600" />
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-green-700">{t.totalAmount}</p>
+                          <p className="text-2xl font-bold text-green-800">
+                            {selectedCustomer.totalAmount.toLocaleString()} {t.sar}
+                          </p>
+                        </div>
+                        <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                          <span className="text-white font-bold">₿</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-purple-700">{t.averagePrice}</p>
+                          <p className="text-2xl font-bold text-purple-800">
+                            {selectedCustomer.averagePrice} {t.sar}
+                          </p>
+                        </div>
+                        <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                          <span className="text-white font-bold">%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           ) : (
-            <Card>
-              <CardContent className="flex items-center justify-center h-64">
-                <p className="text-gray-500 text-lg">{t.noCustomerSelected}</p>
+            <Card className="h-[calc(100vh-200px)]">
+              <CardContent className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 text-lg">{t.noCustomerSelected}</p>
+                </div>
               </CardContent>
             </Card>
           )}
