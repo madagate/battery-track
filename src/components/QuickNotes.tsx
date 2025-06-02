@@ -71,7 +71,7 @@ const QuickNotes = ({ language }: QuickNotesProps) => {
             <Checkbox
               id="showCompleted"
               checked={showCompleted}
-              onCheckedChange={setShowCompleted}
+              onCheckedChange={(checked) => setShowCompleted(checked === true)}
             />
             <label htmlFor="showCompleted" className="text-sm font-normal">
               {t.showCompleted}
@@ -111,7 +111,7 @@ const QuickNotes = ({ language }: QuickNotesProps) => {
               >
                 <Checkbox
                   checked={note.completed}
-                  onCheckedChange={() => toggleNote(note.id)}
+                  onCheckedChange={(checked) => toggleNote(note.id)}
                   className="mt-1"
                 />
                 <span
