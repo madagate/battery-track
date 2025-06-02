@@ -120,7 +120,7 @@ export const customersData: Customer[] = [
 ];
 
 export const batteryTypes = [
-  'بطاريات عادية',
+  'بطاريات عادية', // Default type first
   'بطاريات جافة',
   'بطاريات زجاج',
   'بطاريات تعبئة',

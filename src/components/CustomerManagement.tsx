@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Search, Phone, MessageCircle, Calendar, TrendingUp, UserPlus, Filter, Eye, Users } from "lucide-react";
+import { Search, Phone, MessageCircle, Calendar, TrendingUp, UserPlus, Filter, Eye, Users, Star, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,7 +52,11 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
       sar: "ريال",
       noCustomerSelected: "اختر عميلاً لعرض التفاصيل",
       purchaseHistory: "سجل المشتريات",
-      totalCustomers: "إجمالي العملاء"
+      totalCustomers: "إجمالي العملاء",
+      contactInfo: "معلومات التواصل",
+      statistics: "الإحصائيات",
+      topCustomer: "عميل مميز",
+      recentCustomers: "العملاء الحديثون"
     },
     en: {
       customerManagement: "Customer Management",
@@ -80,7 +84,11 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
       sar: "SAR",
       noCustomerSelected: "Select a customer to view details",
       purchaseHistory: "Purchase History",
-      totalCustomers: "Total Customers"
+      totalCustomers: "Total Customers",
+      contactInfo: "Contact Information",
+      statistics: "Statistics",
+      topCustomer: "Top Customer",
+      recentCustomers: "Recent Customers"
     }
   };
 
@@ -149,221 +157,285 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
     setShowAddForm(false);
   };
 
+  const getCustomerPriorityColor = (daysAgo: number) => {
+    if (daysAgo <= 7) return 'bg-green-100 border-green-300 text-green-800';
+    if (daysAgo <= 15) return 'bg-yellow-100 border-yellow-300 text-yellow-800';
+    if (daysAgo <= 30) return 'bg-orange-100 border-orange-300 text-orange-800';
+    return 'bg-red-100 border-red-300 text-red-800';
+  };
+
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="flex items-center space-x-3 rtl:space-x-reverse">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <Users className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">{t.customerManagement}</h2>
-            <p className="text-gray-600">{t.totalCustomers}: {customers.length}</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+      <div className="container mx-auto p-6 max-w-7xl">
+        {/* Enhanced Header */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div className="flex items-center space-x-4 rtl:space-x-reverse">
+              <div className="p-3 bg-gradient-to-br from-primary/20 to-primary/30 rounded-xl">
+                <Users className="w-8 h-8 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-800">{t.customerManagement}</h1>
+                <p className="text-gray-600 mt-1">{t.totalCustomers}: <span className="font-semibold text-primary">{customers.length}</span></p>
+              </div>
+            </div>
+            
+            <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
+              <DialogTrigger asChild>
+                <Button size="lg" className="flex items-center space-x-2 rtl:space-x-reverse shadow-lg">
+                  <UserPlus className="w-5 h-5" />
+                  <span>{t.addCustomer}</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{t.addCustomer}</DialogTitle>
+                </DialogHeader>
+                <AddCustomerForm onAdd={addNewCustomer} language={language} />
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
-        <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center space-x-2 rtl:space-x-reverse">
-              <UserPlus className="w-4 h-4" />
-              <span>{t.addCustomer}</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t.addCustomer}</DialogTitle>
-            </DialogHeader>
-            <AddCustomerForm onAdd={addNewCustomer} language={language} />
-          </DialogContent>
-        </Dialog>
-      </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Customer List */}
-        <div className="xl:col-span-1">
-          <Card className="h-[calc(100vh-200px)]">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center space-x-2 rtl:space-x-reverse text-lg">
-                <Search className="w-5 h-5" />
-                <span>{t.customerList}</span>
-              </CardTitle>
-              <div className="space-y-3">
-                <Input
-                  placeholder={t.searchCustomers}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                
-                <Select value={dayFilter} onValueChange={setDayFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t.filterByDays} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t.allCustomers}</SelectItem>
-                    <SelectItem value="7">{t.last7Days}</SelectItem>
-                    <SelectItem value="15">{t.last15Days}</SelectItem>
-                    <SelectItem value="30">{t.last30Days}</SelectItem>
-                    <SelectItem value="30+">{t.moreThan30Days}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="space-y-1 max-h-[calc(100vh-380px)] overflow-y-auto px-6 pb-6">
-                {filteredCustomers.map((customer) => {
-                  const daysAgo = getDaysAgo(customer.lastPurchase);
-                  return (
-                    <div
-                      key={customer.id}
-                      onClick={() => setSelectedCustomer(customer)}
-                      className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        selectedCustomer?.id === customer.id 
-                          ? 'bg-primary/10 border-primary shadow-md' 
-                          : 'hover:bg-gray-50 border-gray-200'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="font-semibold text-gray-800">{customer.name}</div>
-                        <Badge 
-                          variant={daysAgo > 30 ? "destructive" : daysAgo > 15 ? "secondary" : "default"}
-                          className="text-xs"
-                        >
-                          {languageLabels[customer.preferredLanguage]}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-gray-600 mb-1">{customer.phone}</div>
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-500">
-                          {daysAgo} {t.daysAgo}
-                        </span>
-                        <span className="font-medium text-primary">
-                          {customer.totalAmount.toLocaleString()} {t.sar}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Customer Details */}
-        <div className="xl:col-span-2">
-          {selectedCustomer ? (
-            <Card className="h-[calc(100vh-200px)]">
-              <CardHeader className="border-b">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl">{selectedCustomer.name}</CardTitle>
-                  <Badge variant="secondary" className="text-sm">
-                    {languageLabels[selectedCustomer.preferredLanguage]}
-                  </Badge>
-                </div>
-                <div className="flex flex-wrap gap-3 pt-2">
-                  <Button 
-                    onClick={() => sendWhatsAppMessage(selectedCustomer)}
-                    className="flex items-center space-x-2 rtl:space-x-reverse"
-                    size="sm"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    <span>{t.sendWhatsApp}</span>
-                  </Button>
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+          {/* Customer List */}
+          <div className="xl:col-span-5">
+            <Card className="h-[calc(100vh-280px)] shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+                <CardTitle className="flex items-center space-x-3 rtl:space-x-reverse text-xl">
+                  <Search className="w-6 h-6 text-primary" />
+                  <span>{t.customerList}</span>
+                </CardTitle>
+                <div className="space-y-4 mt-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      placeholder={t.searchCustomers}
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 rtl:pr-10 rtl:pl-3"
+                    />
+                  </div>
                   
-                  <Dialog open={showPurchaseHistory} onOpenChange={setShowPurchaseHistory}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex items-center space-x-2 rtl:space-x-reverse">
-                        <Eye className="w-4 h-4" />
-                        <span>{t.purchaseHistory}</span>
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-5xl max-h-[80vh] overflow-auto">
-                      <DialogHeader>
-                        <DialogTitle>{t.purchaseHistory} - {selectedCustomer.name}</DialogTitle>
-                      </DialogHeader>
-                      <CustomerPurchaseHistory customer={selectedCustomer} language={language} />
-                    </DialogContent>
-                  </Dialog>
+                  <Select value={dayFilter} onValueChange={setDayFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t.filterByDays} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.allCustomers}</SelectItem>
+                      <SelectItem value="7">{t.last7Days}</SelectItem>
+                      <SelectItem value="15">{t.last15Days}</SelectItem>
+                      <SelectItem value="30">{t.last30Days}</SelectItem>
+                      <SelectItem value="30+">{t.moreThan30Days}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardHeader>
-              <CardContent className="p-6 overflow-y-auto max-h-[calc(100vh-320px)]">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Contact Info */}
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-lg text-gray-800 border-b pb-2">معلومات التواصل</h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                        <Phone className="w-5 h-5 text-gray-500" />
-                        <span className="text-lg">{selectedCustomer.phone}</span>
+              <CardContent className="p-0">
+                <div className="space-y-2 max-h-[calc(100vh-480px)] overflow-y-auto p-4">
+                  {filteredCustomers.map((customer) => {
+                    const daysAgo = getDaysAgo(customer.lastPurchase);
+                    const priorityColor = getCustomerPriorityColor(daysAgo);
+                    
+                    return (
+                      <div
+                        key={customer.id}
+                        onClick={() => setSelectedCustomer(customer)}
+                        className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1 ${
+                          selectedCustomer?.id === customer.id 
+                            ? 'bg-primary/10 border-primary shadow-lg scale-105' 
+                            : `hover:bg-gray-50 ${priorityColor}`
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="font-bold text-lg text-gray-800">{customer.name}</div>
+                          <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                            {customer.totalAmount > 5000 && (
+                              <Star className="w-4 h-4 text-yellow-500" />
+                            )}
+                            <Badge variant="outline" className="text-xs">
+                              {languageLabels[customer.preferredLanguage]}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2 rtl:space-x-reverse text-sm text-gray-600 mb-2">
+                          <Phone className="w-4 h-4" />
+                          <span>{customer.phone}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center space-x-2 rtl:space-x-reverse text-xs text-gray-500">
+                            <Calendar className="w-3 h-3" />
+                            <span>{daysAgo} {t.daysAgo}</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-primary text-lg">
+                              {customer.totalAmount.toLocaleString()} {t.sar}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {customer.totalPurchases} {t.purchases}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                        <Calendar className="w-5 h-5 text-gray-500" />
-                        <div>
-                          <span className="text-lg">
-                            {new Date(selectedCustomer.lastPurchase).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
-                          </span>
-                          <span className="text-sm text-gray-500 ml-2 rtl:mr-2">
-                            ({getDaysAgo(selectedCustomer.lastPurchase)} {t.daysAgo})
-                          </span>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Customer Details */}
+          <div className="xl:col-span-7">
+            {selectedCustomer ? (
+              <Card className="h-[calc(100vh-280px)] shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4 rtl:space-x-reverse">
+                      <div className="p-2 bg-primary/20 rounded-lg">
+                        <Users className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-2xl">{selectedCustomer.name}</CardTitle>
+                        <div className="flex items-center space-x-2 rtl:space-x-reverse mt-1">
+                          <Badge variant="secondary" className="text-sm">
+                            {languageLabels[selectedCustomer.preferredLanguage]}
+                          </Badge>
+                          {selectedCustomer.totalAmount > 5000 && (
+                            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                              <Star className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0" />
+                              {t.topCustomer}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Statistics Cards */}
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-blue-700">{t.totalPurchases}</p>
-                          <p className="text-2xl font-bold text-blue-800">
-                            {selectedCustomer.totalPurchases}
-                          </p>
+                  <div className="flex flex-wrap gap-3 pt-4">
+                    <Button 
+                      onClick={() => sendWhatsAppMessage(selectedCustomer)}
+                      className="flex items-center space-x-2 rtl:space-x-reverse"
+                      size="sm"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>{t.sendWhatsApp}</span>
+                    </Button>
+                    
+                    <Dialog open={showPurchaseHistory} onOpenChange={setShowPurchaseHistory}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="flex items-center space-x-2 rtl:space-x-reverse">
+                          <Eye className="w-4 h-4" />
+                          <span>{t.purchaseHistory}</span>
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-5xl max-h-[80vh] overflow-auto">
+                        <DialogHeader>
+                          <DialogTitle>{t.purchaseHistory} - {selectedCustomer.name}</DialogTitle>
+                        </DialogHeader>
+                        <CustomerPurchaseHistory customer={selectedCustomer} language={language} />
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6 overflow-y-auto max-h-[calc(100vh-420px)]">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Contact Info */}
+                    <div className="space-y-6">
+                      <h3 className="font-bold text-xl text-gray-800 border-b-2 border-primary/20 pb-2">
+                        {t.contactInfo}
+                      </h3>
+                      <div className="space-y-4">
+                        <div className="flex items-center space-x-4 rtl:space-x-reverse p-4 bg-gray-50 rounded-lg">
+                          <div className="p-2 bg-primary/10 rounded-lg">
+                            <Phone className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <div className="text-sm text-gray-500">رقم الهاتف</div>
+                            <div className="text-lg font-semibold">{selectedCustomer.phone}</div>
+                          </div>
                         </div>
-                        <TrendingUp className="w-8 h-8 text-blue-600" />
+                        <div className="flex items-center space-x-4 rtl:space-x-reverse p-4 bg-gray-50 rounded-lg">
+                          <div className="p-2 bg-primary/10 rounded-lg">
+                            <Calendar className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <div className="text-sm text-gray-500">آخر زيارة</div>
+                            <div className="text-lg font-semibold">
+                              {new Date(selectedCustomer.lastPurchase).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              ({getDaysAgo(selectedCustomer.lastPurchase)} {t.daysAgo})
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-green-700">{t.totalAmount}</p>
-                          <p className="text-2xl font-bold text-green-800">
-                            {selectedCustomer.totalAmount.toLocaleString()} {t.sar}
-                          </p>
+                    {/* Statistics Cards */}
+                    <div className="space-y-6">
+                      <h3 className="font-bold text-xl text-gray-800 border-b-2 border-primary/20 pb-2">
+                        {t.statistics}
+                      </h3>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200 shadow-sm">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-blue-700">{t.totalPurchases}</p>
+                              <p className="text-3xl font-bold text-blue-800">
+                                {selectedCustomer.totalPurchases}
+                              </p>
+                            </div>
+                            <TrendingUp className="w-10 h-10 text-blue-600" />
+                          </div>
                         </div>
-                        <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                          <span className="text-white font-bold">₿</span>
+                        
+                        <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl border border-green-200 shadow-sm">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-green-700">{t.totalAmount}</p>
+                              <p className="text-3xl font-bold text-green-800">
+                                {selectedCustomer.totalAmount.toLocaleString()}
+                              </p>
+                              <p className="text-sm text-green-600">{t.sar}</p>
+                            </div>
+                            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
+                              <span className="text-white font-bold text-lg">₿</span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-purple-700">{t.averagePrice}</p>
-                          <p className="text-2xl font-bold text-purple-800">
-                            {selectedCustomer.averagePrice} {t.sar}
-                          </p>
-                        </div>
-                        <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                          <span className="text-white font-bold">%</span>
+                        
+                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200 shadow-sm">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-purple-700">{t.averagePrice}</p>
+                              <p className="text-3xl font-bold text-purple-800">
+                                {selectedCustomer.averagePrice}
+                              </p>
+                              <p className="text-sm text-purple-600">{t.sar}</p>
+                            </div>
+                            <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
+                              <span className="text-white font-bold text-lg">%</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="h-[calc(100vh-200px)]">
-              <CardContent className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 text-lg">{t.noCustomerSelected}</p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="h-[calc(100vh-280px)] shadow-lg">
+                <CardContent className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="p-6 bg-gray-100 rounded-full w-32 h-32 mx-auto mb-6 flex items-center justify-center">
+                      <Users className="w-16 h-16 text-gray-400" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-600 mb-2">{t.noCustomerSelected}</h3>
+                    <p className="text-gray-500">اختر عميلاً من القائمة لعرض تفاصيله</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </div>

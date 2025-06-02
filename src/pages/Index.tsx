@@ -6,7 +6,6 @@ import DailyPurchases from "@/components/DailyPurchases";
 import CustomerManagement from "@/components/CustomerManagement";
 import StickyNotes from "@/components/StickyNotes";
 import Statistics from "@/components/Statistics";
-import QuickNotes from "@/components/QuickNotes";
 
 type Language = 'ar' | 'en';
 type ActiveTab = 'purchases' | 'customers' | 'notes' | 'stats';
@@ -75,32 +74,25 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="min-h-[calc(100vh-180px)]">
+        {/* Content Area with unified height */}
+        <div className="h-[calc(100vh-160px)]">
           {activeTab === 'purchases' && (
-            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-              <div className="xl:col-span-3">
-                <div className="bg-white rounded-lg shadow-sm h-full">
-                  <DailyPurchases language={language} selectedDate={selectedDate} />
-                </div>
-              </div>
-              <div className="xl:col-span-1">
-                <QuickNotes language={language} />
-              </div>
+            <div className="h-full bg-white rounded-lg shadow-sm overflow-hidden">
+              <DailyPurchases language={language} selectedDate={selectedDate} />
             </div>
           )}
           {activeTab === 'customers' && (
-            <div className="bg-white rounded-lg shadow-sm h-full">
+            <div className="h-full">
               <CustomerManagement language={language} />
             </div>
           )}
           {activeTab === 'notes' && (
-            <div className="bg-white rounded-lg shadow-sm h-full">
+            <div className="h-full bg-white rounded-lg shadow-sm overflow-hidden">
               <StickyNotes language={language} />
             </div>
           )}
           {activeTab === 'stats' && (
-            <div className="bg-white rounded-lg shadow-sm h-full">
+            <div className="h-full bg-white rounded-lg shadow-sm overflow-hidden">
               <Statistics language={language} />
             </div>
           )}
