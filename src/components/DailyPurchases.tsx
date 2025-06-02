@@ -1,10 +1,11 @@
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Minus, Save, Search } from "lucide-react";
+import { Plus, Minus, Save, Check, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import { customersData, batteryTypes } from "@/data/customersData";
 
 type Language = 'ar' | 'en';
 
@@ -17,6 +18,7 @@ interface Purchase {
   total: number;
   discount: number;
   finalTotal: number;
+  saved: boolean;
 }
 
 interface DailyPurchasesProps {
@@ -26,13 +28,12 @@ interface DailyPurchasesProps {
 
 const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
-  const [customers] = useState<string[]>(['أحمد محمد', 'فهد العتيبي', 'سالم الرشيد', 'خالد النصر']);
-  const [batteryTypes] = useState<string[]>(['بطارية سيارة', 'بطارية شاحنة', 'بطارية دراجة نارية', 'بطارية UPS']);
   const [activeCell, setActiveCell] = useState<{ row: number; col: string } | null>(null);
   const [history, setHistory] = useState<Purchase[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
   const isRTL = language === 'ar';
+  const customerNames = customersData.map(customer => customer.name);
 
   const translations = {
     ar: {
@@ -43,11 +44,19 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
       total: "الإجمالي",
       discount: "الخصم",
       finalTotal: "الإجمالي النهائي",
+      actions: "عمليات",
       addRow: "إضافة سطر",
       removeRow: "حذف سطر",
       save: "حفظ",
       totalForDay: "إجمالي اليوم",
-      searchCustomer: "بحث عن العميل..."
+      searchCustomer: "بحث عن العميل...",
+      previousDay: "اليوم السابق",
+      nextDay: "اليوم التالي",
+      newMonth: "شهر جديد",
+      confirmNewMonth: "هل أنت متأكد من مسح بيانات الشهر؟",
+      saved: "تم الحفظ",
+      dataSaved: "تم حفظ البيانات بنجاح",
+      monthCleared: "تم مسح بيانات الشهر"
     },
     en: {
       customerName: "Customer Name",
@@ -57,11 +66,19 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
       total: "Total",
       discount: "Discount",
       finalTotal: "Final Total",
+      actions: "Actions",
       addRow: "Add Row",
       removeRow: "Remove Row", 
       save: "Save",
       totalForDay: "Total for Day",
-      searchCustomer: "Search customer..."
+      searchCustomer: "Search customer...",
+      previousDay: "Previous Day",
+      nextDay: "Next Day",
+      newMonth: "New Month",
+      confirmNewMonth: "Are you sure you want to clear month data?",
+      saved: "Saved",
+      dataSaved: "Data saved successfully",
+      monthCleared: "Month data cleared"
     }
   };
 
@@ -90,7 +107,8 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
       price: 0,
       total: 0,
       discount: 0,
-      finalTotal: 0
+      finalTotal: 0,
+      saved: false
     };
     
     saveToHistory();
@@ -107,7 +125,7 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
   const updatePurchase = (id: string, field: keyof Purchase, value: any) => {
     setPurchases(purchases.map(purchase => {
       if (purchase.id === id) {
-        const updated = { ...purchase, [field]: value };
+        const updated = { ...purchase, [field]: value, saved: false };
         
         // Recalculate totals
         if (field === 'quantity' || field === 'price') {
@@ -123,11 +141,27 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
     }));
   };
 
+  const savePurchase = (id: string) => {
+    setPurchases(purchases.map(purchase => 
+      purchase.id === id ? { ...purchase, saved: true } : purchase
+    ));
+    
+    toast({
+      title: t.saved,
+      description: t.dataSaved,
+    });
+
+    // Add new row after saving
+    addNewPurchase();
+  };
+
   const calculateDayTotal = () => {
     return purchases.reduce((sum, purchase) => sum + purchase.finalTotal, 0);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent, rowIndex: number, field: string) => {
+    const purchaseId = purchases[rowIndex]?.id;
+    
     if (e.ctrlKey && e.key === 'z') {
       e.preventDefault();
       undo();
@@ -136,12 +170,23 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
       redo();
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      // Move to next row, same column
-      if (rowIndex < purchases.length - 1) {
-        setActiveCell({ row: rowIndex + 1, col: field });
+      
+      if (field === 'discount') {
+        // Move to save button
+        setActiveCell({ row: rowIndex, col: 'save' });
+      } else if (field === 'save') {
+        // Save and move to next row
+        savePurchase(purchaseId);
+        setTimeout(() => setActiveCell({ row: purchases.length, col: 'customerName' }), 100);
       } else {
-        addNewPurchase();
-        setTimeout(() => setActiveCell({ row: purchases.length, col: field }), 100);
+        // Move to next column or next row
+        const fields = ['customerName', 'batteryType', 'quantity', 'price', 'discount'];
+        const currentIndex = fields.indexOf(field);
+        if (currentIndex < fields.length - 1) {
+          setActiveCell({ row: rowIndex, col: fields[currentIndex + 1] });
+        } else {
+          setActiveCell({ row: rowIndex, col: 'save' });
+        }
       }
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -152,6 +197,20 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
       e.preventDefault();
       if (rowIndex > 0) {
         setActiveCell({ row: rowIndex - 1, col: field });
+      }
+    } else if (e.key === 'ArrowRight' && !isRTL) {
+      e.preventDefault();
+      const fields = ['customerName', 'batteryType', 'quantity', 'price', 'discount', 'save'];
+      const currentIndex = fields.indexOf(field);
+      if (currentIndex < fields.length - 1) {
+        setActiveCell({ row: rowIndex, col: fields[currentIndex + 1] });
+      }
+    } else if (e.key === 'ArrowLeft' && !isRTL) {
+      e.preventDefault();
+      const fields = ['customerName', 'batteryType', 'quantity', 'price', 'discount', 'save'];
+      const currentIndex = fields.indexOf(field);
+      if (currentIndex > 0) {
+        setActiveCell({ row: rowIndex, col: fields[currentIndex - 1] });
       }
     }
   };
@@ -170,34 +229,78 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
     }
   };
 
+  const handlePreviousDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    // This should trigger parent component to update selectedDate
+  };
+
+  const handleNextDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    // This should trigger parent component to update selectedDate
+  };
+
+  const handleNewMonth = () => {
+    if (confirm(t.confirmNewMonth)) {
+      setPurchases([]);
+      setHistory([]);
+      setHistoryIndex(-1);
+      addNewPurchase();
+      toast({
+        title: t.monthCleared,
+        description: t.monthCleared,
+      });
+    }
+  };
+
   const savePurchases = () => {
     // Here you would save to your database
     toast({
-      title: language === 'ar' ? "تم الحفظ" : "Saved",
-      description: language === 'ar' ? "تم حفظ البيانات بنجاح" : "Data saved successfully",
+      title: t.saved,
+      description: t.dataSaved,
     });
   };
 
   return (
     <div className="p-6 space-y-6">
       {/* Header Controls */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">{t.totalForDay}: {calculateDayTotal().toLocaleString()} ريال</h2>
-        <div className="flex space-x-2 rtl:space-x-reverse">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-2xl font-bold text-gray-800">
+          {t.totalForDay}: {calculateDayTotal().toLocaleString()} ريال
+        </h2>
+        
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={handlePreviousDay} size="sm" variant="outline">
+            <ChevronLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">{t.previousDay}</span>
+          </Button>
+          
+          <Button onClick={handleNextDay} size="sm" variant="outline">
+            <span className="hidden sm:inline">{t.nextDay}</span>
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+          
           <Button onClick={addNewPurchase} size="sm" className="flex items-center space-x-2 rtl:space-x-reverse">
             <Plus className="w-4 h-4" />
             <span>{t.addRow}</span>
           </Button>
-          <Button onClick={savePurchases} size="sm" variant="secondary" className="flex items-center space-x-2 rtl:space-x-reverse">
+          
+          <Button onClick={savePurchases} size="sm" variant="secondary">
             <Save className="w-4 h-4" />
-            <span>{t.save}</span>
+            <span className="hidden sm:inline">{t.save}</span>
+          </Button>
+          
+          <Button onClick={handleNewMonth} size="sm" variant="destructive">
+            <RotateCcw className="w-4 h-4" />
+            <span className="hidden sm:inline">{t.newMonth}</span>
           </Button>
         </div>
       </div>
 
       {/* Purchases Table */}
       <div className="overflow-x-auto border rounded-lg">
-        <table className="w-full">
+        <table className="w-full min-w-[800px]">
           <thead>
             <tr className="bg-gray-50 border-b">
               <th className="p-3 text-right font-semibold">{t.customerName}</th>
@@ -207,12 +310,12 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
               <th className="p-3 text-right font-semibold">{t.total}</th>
               <th className="p-3 text-right font-semibold">{t.discount}</th>
               <th className="p-3 text-right font-semibold">{t.finalTotal}</th>
-              <th className="p-3 text-center font-semibold">عمليات</th>
+              <th className="p-3 text-center font-semibold">{t.actions}</th>
             </tr>
           </thead>
           <tbody>
             {purchases.map((purchase, index) => (
-              <tr key={purchase.id} className="border-b hover:bg-gray-50">
+              <tr key={purchase.id} className={`border-b hover:bg-gray-50 ${purchase.saved ? 'bg-green-50' : ''}`}>
                 <td className="p-2">
                   <Select 
                     value={purchase.customerName} 
@@ -222,7 +325,7 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
                       <SelectValue placeholder={t.searchCustomer} />
                     </SelectTrigger>
                     <SelectContent>
-                      {customers.map((customer) => (
+                      {customerNames.map((customer) => (
                         <SelectItem key={customer} value={customer}>
                           {customer}
                         </SelectItem>
@@ -254,6 +357,7 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
                     onChange={(e) => updatePurchase(purchase.id, 'quantity', parseFloat(e.target.value) || 0)}
                     onKeyDown={(e) => handleKeyDown(e, index, 'quantity')}
                     className="w-full text-center"
+                    autoFocus={activeCell?.row === index && activeCell?.col === 'quantity'}
                   />
                 </td>
                 <td className="p-2">
@@ -263,6 +367,7 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
                     onChange={(e) => updatePurchase(purchase.id, 'price', parseFloat(e.target.value) || 0)}
                     onKeyDown={(e) => handleKeyDown(e, index, 'price')}
                     className="w-full text-center"
+                    autoFocus={activeCell?.row === index && activeCell?.col === 'price'}
                   />
                 </td>
                 <td className="p-2">
@@ -277,6 +382,7 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
                     onChange={(e) => updatePurchase(purchase.id, 'discount', parseFloat(e.target.value) || 0)}
                     onKeyDown={(e) => handleKeyDown(e, index, 'discount')}
                     className="w-full text-center"
+                    autoFocus={activeCell?.row === index && activeCell?.col === 'discount'}
                   />
                 </td>
                 <td className="p-2">
@@ -284,15 +390,27 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
                     {purchase.finalTotal.toLocaleString()}
                   </div>
                 </td>
-                <td className="p-2 text-center">
-                  <Button
-                    onClick={() => removePurchase(purchase.id)}
-                    size="sm"
-                    variant="destructive"
-                    disabled={purchases.length === 1}
-                  >
-                    <Minus className="w-4 h-4" />
-                  </Button>
+                <td className="p-2">
+                  <div className="flex items-center justify-center space-x-1">
+                    <Button
+                      onClick={() => savePurchase(purchase.id)}
+                      size="sm"
+                      variant={purchase.saved ? "default" : "outline"}
+                      className="p-1"
+                      disabled={purchase.saved}
+                    >
+                      <Check className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      onClick={() => removePurchase(purchase.id)}
+                      size="sm"
+                      variant="destructive"
+                      disabled={purchases.length === 1}
+                      className="p-1"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}

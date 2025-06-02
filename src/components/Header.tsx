@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { CalendarIcon, Globe } from "lucide-react";
+import { CalendarIcon, Globe, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -27,21 +27,37 @@ const Header = ({ language, setLanguage, selectedDate, setSelectedDate }: Header
     ar: {
       title: "مؤسسة بوابة المدى التجارية",
       subtitle: "نظام إدارة البطاريات التالفة",
-      selectDate: "اختر التاريخ"
+      selectDate: "اختر التاريخ",
+      previousDay: "اليوم السابق",
+      nextDay: "اليوم التالي"
     },
     en: {
       title: "Mada Gate Trading Est.",
       subtitle: "Battery Management System", 
-      selectDate: "Select Date"
+      selectDate: "Select Date",
+      previousDay: "Previous Day",
+      nextDay: "Next Day"
     }
   };
 
   const t = translations[language];
 
+  const handlePreviousDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    setSelectedDate(newDate);
+  };
+
+  const handleNextDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    setSelectedDate(newDate);
+  };
+
   return (
     <header className="bg-white shadow-lg border-b-4 border-primary">
       <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
           {/* Logo and Title */}
           <div className="flex items-center space-x-4 rtl:space-x-reverse">
             <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
@@ -58,40 +74,61 @@ const Header = ({ language, setLanguage, selectedDate, setSelectedDate }: Header
           </div>
 
           {/* Controls */}
-          <div className="flex items-center space-x-4 rtl:space-x-reverse">
-            {/* Date Picker */}
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-[240px] justify-start text-left font-normal",
-                    !selectedDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
-                  {selectedDate ? (
-                    format(selectedDate, "PPP", { locale })
-                  ) : (
-                    <span>{t.selectDate}</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => {
-                    if (date) {
-                      setSelectedDate(date);
-                      setCalendarOpen(false);
-                    }
-                  }}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            {/* Date Navigation */}
+            <div className="flex items-center space-x-2 rtl:space-x-reverse">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePreviousDay}
+                className="p-2"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+
+              {/* Date Picker */}
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[240px] justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
+                    {selectedDate ? (
+                      format(selectedDate, "PPP", { locale })
+                    ) : (
+                      <span>{t.selectDate}</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        setSelectedDate(date);
+                        setCalendarOpen(false);
+                      }
+                    }}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextDay}
+                className="p-2"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
 
             {/* Language Toggle */}
             <Button

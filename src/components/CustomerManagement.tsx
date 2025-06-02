@@ -1,24 +1,17 @@
 
 import { useState } from "react";
-import { Search, Phone, MessageCircle, Calendar, TrendingUp } from "lucide-react";
+import { Search, Phone, MessageCircle, Calendar, TrendingUp, UserPlus, Filter, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { customersData, Customer } from "@/data/customersData";
+import CustomerPurchaseHistory from "./CustomerPurchaseHistory";
+import AddCustomerForm from "./AddCustomerForm";
 
 type Language = 'ar' | 'en';
-
-interface Customer {
-  id: string;
-  name: string;
-  phone: string;
-  lastPurchase: string;
-  totalPurchases: number;
-  totalAmount: number;
-  averagePrice: number;
-  preferredLanguage: 'ar' | 'en' | 'hi' | 'bn';
-}
 
 interface CustomerManagementProps {
   language: Language;
@@ -27,41 +20,11 @@ interface CustomerManagementProps {
 const CustomerManagement = ({ language }: CustomerManagementProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [customers, setCustomers] = useState<Customer[]>(customersData);
+  const [dayFilter, setDayFilter] = useState<string>('all');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showPurchaseHistory, setShowPurchaseHistory] = useState(false);
   
-  // Sample customers data
-  const [customers] = useState<Customer[]>([
-    {
-      id: '1',
-      name: 'أحمد محمد',
-      phone: '+966501234567',
-      lastPurchase: '2024-01-15',
-      totalPurchases: 15,
-      totalAmount: 4500,
-      averagePrice: 300,
-      preferredLanguage: 'ar'
-    },
-    {
-      id: '2', 
-      name: 'فهد العتيبي',
-      phone: '+966507654321',
-      lastPurchase: '2024-01-10',
-      totalPurchases: 8,
-      totalAmount: 2400,
-      averagePrice: 300,
-      preferredLanguage: 'ar'
-    },
-    {
-      id: '3',
-      name: 'John Smith', 
-      phone: '+966551234567',
-      lastPurchase: '2024-01-05',
-      totalPurchases: 12,
-      totalAmount: 3600,
-      averagePrice: 300,
-      preferredLanguage: 'en'
-    }
-  ]);
-
   const translations = {
     ar: {
       customerManagement: "إدارة العملاء",
@@ -77,10 +40,18 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
       language: "اللغة",
       sendWhatsApp: "إرسال واتساب",
       viewHistory: "عرض التاريخ",
+      addCustomer: "إضافة عميل",
+      filterByDays: "فلتر بالأيام",
+      allCustomers: "جميع العملاء",
+      last7Days: "آخر 7 أيام",
+      last15Days: "آخر 15 يوماً",
+      last30Days: "آخر 30 يوماً",
+      moreThan30Days: "أكثر من 30 يوماً",
       daysAgo: "يوم مضى",
       purchases: "مشتريات",
       sar: "ريال",
-      noCustomerSelected: "لم يتم اختيار عميل"
+      noCustomerSelected: "لم يتم اختيار عميل",
+      purchaseHistory: "سجل المشتريات"
     },
     en: {
       customerManagement: "Customer Management",
@@ -96,10 +67,18 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
       language: "Language",
       sendWhatsApp: "Send WhatsApp",
       viewHistory: "View History",
+      addCustomer: "Add Customer",
+      filterByDays: "Filter by Days",
+      allCustomers: "All Customers",
+      last7Days: "Last 7 Days",
+      last15Days: "Last 15 Days", 
+      last30Days: "Last 30 Days",
+      moreThan30Days: "More than 30 Days",
       daysAgo: "days ago",
       purchases: "purchases",
       sar: "SAR",
-      noCustomerSelected: "No customer selected"
+      noCustomerSelected: "No customer selected",
+      purchaseHistory: "Purchase History"
     }
   };
 
@@ -112,11 +91,6 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
     bn: 'বাংলা'
   };
 
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.phone.includes(searchTerm)
-  );
-
   const getDaysAgo = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -124,6 +98,28 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
+
+  const filterCustomersByDays = (customers: Customer[]) => {
+    if (dayFilter === 'all') return customers;
+    
+    return customers.filter(customer => {
+      const daysAgo = getDaysAgo(customer.lastPurchase);
+      switch (dayFilter) {
+        case '7': return daysAgo <= 7;
+        case '15': return daysAgo <= 15;
+        case '30': return daysAgo <= 30;
+        case '30+': return daysAgo > 30;
+        default: return true;
+      }
+    });
+  };
+
+  const filteredCustomers = filterCustomersByDays(
+    customers.filter(customer =>
+      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.phone.includes(searchTerm)
+    )
+  );
 
   const sendWhatsAppMessage = (customer: Customer) => {
     const messages = {
@@ -138,14 +134,41 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
     window.open(whatsappUrl, '_blank');
   };
 
+  const addNewCustomer = (customerData: Omit<Customer, 'id' | 'totalPurchases' | 'totalAmount' | 'averagePrice' | 'purchases'>) => {
+    const newCustomer: Customer = {
+      ...customerData,
+      id: Date.now().toString(),
+      totalPurchases: 0,
+      totalAmount: 0,
+      averagePrice: 0,
+      purchases: []
+    };
+    setCustomers([...customers, newCustomer]);
+    setShowAddForm(false);
+  };
+
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-4">
         <h2 className="text-2xl font-bold text-gray-800">{t.customerManagement}</h2>
+        <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
+          <DialogTrigger asChild>
+            <Button className="flex items-center space-x-2 rtl:space-x-reverse">
+              <UserPlus className="w-4 h-4" />
+              <span>{t.addCustomer}</span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t.addCustomer}</DialogTitle>
+            </DialogHeader>
+            <AddCustomerForm onAdd={addNewCustomer} language={language} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Customer List */}
+        {/* Customer List with Filters */}
         <div className="lg:col-span-1 space-y-4">
           <Card>
             <CardHeader>
@@ -162,24 +185,48 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
                 className="w-full"
               />
               
+              <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                <Filter className="w-4 h-4" />
+                <Select value={dayFilter} onValueChange={setDayFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t.filterByDays} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t.allCustomers}</SelectItem>
+                    <SelectItem value="7">{t.last7Days}</SelectItem>
+                    <SelectItem value="15">{t.last15Days}</SelectItem>
+                    <SelectItem value="30">{t.last30Days}</SelectItem>
+                    <SelectItem value="30+">{t.moreThan30Days}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {filteredCustomers.map((customer) => (
-                  <div
-                    key={customer.id}
-                    onClick={() => setSelectedCustomer(customer)}
-                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                      selectedCustomer?.id === customer.id 
-                        ? 'bg-primary/10 border-primary' 
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="font-semibold">{customer.name}</div>
-                    <div className="text-sm text-gray-600">{customer.phone}</div>
-                    <div className="text-xs text-gray-500">
-                      {getDaysAgo(customer.lastPurchase)} {t.daysAgo}
+                {filteredCustomers.map((customer) => {
+                  const daysAgo = getDaysAgo(customer.lastPurchase);
+                  return (
+                    <div
+                      key={customer.id}
+                      onClick={() => setSelectedCustomer(customer)}
+                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                        selectedCustomer?.id === customer.id 
+                          ? 'bg-primary/10 border-primary' 
+                          : 'hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="font-semibold">{customer.name}</div>
+                      <div className="text-sm text-gray-600">{customer.phone}</div>
+                      <div className="flex justify-between items-center">
+                        <div className="text-xs text-gray-500">
+                          {daysAgo} {t.daysAgo}
+                        </div>
+                        <Badge variant={daysAgo > 30 ? "destructive" : daysAgo > 15 ? "secondary" : "default"}>
+                          {languageLabels[customer.preferredLanguage]}
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -198,7 +245,7 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>
                       <label className="font-semibold text-gray-700">{t.name}</label>
@@ -252,7 +299,7 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
                   </div>
                 </div>
                 
-                <div className="flex space-x-4 rtl:space-x-reverse">
+                <div className="flex flex-wrap gap-3">
                   <Button 
                     onClick={() => sendWhatsAppMessage(selectedCustomer)}
                     className="flex items-center space-x-2 rtl:space-x-reverse"
@@ -261,10 +308,20 @@ const CustomerManagement = ({ language }: CustomerManagementProps) => {
                     <span>{t.sendWhatsApp}</span>
                   </Button>
                   
-                  <Button variant="outline" className="flex items-center space-x-2 rtl:space-x-reverse">
-                    <Calendar className="w-4 h-4" />
-                    <span>{t.viewHistory}</span>
-                  </Button>
+                  <Dialog open={showPurchaseHistory} onOpenChange={setShowPurchaseHistory}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="flex items-center space-x-2 rtl:space-x-reverse">
+                        <Eye className="w-4 h-4" />
+                        <span>{t.purchaseHistory}</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl">
+                      <DialogHeader>
+                        <DialogTitle>{t.purchaseHistory} - {selectedCustomer.name}</DialogTitle>
+                      </DialogHeader>
+                      <CustomerPurchaseHistory customer={selectedCustomer} language={language} />
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardContent>
             </Card>
