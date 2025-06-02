@@ -1,14 +1,15 @@
 
-import { useState, useEffect, useCallback } from "react";
-import { Plus, Minus, Save, Check, ChevronLeft, ChevronRight, RotateCcw, Search, UserPlus } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Plus, Minus, Save, Check, RotateCcw, Search, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { customersData, batteryTypes, Customer } from "@/data/customersData";
-import QuickNotes from "./QuickNotes";
+import { notes } from "@/data/notesData";
 import AddCustomerForm from "./AddCustomerForm";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type Language = 'ar' | 'en';
 
@@ -37,6 +38,7 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
   const [customers, setCustomers] = useState<Customer[]>(customersData);
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const isRTL = language === 'ar';
 
@@ -61,7 +63,10 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
       saved: "تم الحفظ",
       dataSaved: "تم حفظ البيانات بنجاح",
       monthCleared: "تم مسح بيانات الشهر",
-      noResults: "لا توجد نتائج"
+      noResults: "لا توجد نتائج",
+      quickNotes: "الملاحظات السريعة",
+      addNote: "إضافة ملاحظة",
+      notePlaceholder: "اكتب ملاحظة جديدة..."
     },
     en: {
       customerName: "Customer Name",
@@ -83,7 +88,10 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
       saved: "Saved",
       dataSaved: "Data saved successfully",
       monthCleared: "Month data cleared",
-      noResults: "No results found"
+      noResults: "No results found",
+      quickNotes: "Quick Notes",
+      addNote: "Add Note",
+      notePlaceholder: "Write a new note..."
     }
   };
 
@@ -107,7 +115,7 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
     const newPurchase: Purchase = {
       id: Date.now().toString(),
       customerName: '',
-      batteryType: 'بطاريات عادية', // Default to normal batteries
+      batteryType: 'بطاريات عادية',
       quantity: 0,
       price: 0,
       total: 0,
@@ -132,7 +140,6 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
       if (purchase.id === id) {
         const updated = { ...purchase, [field]: value, saved: false };
         
-        // Recalculate totals
         if (field === 'quantity' || field === 'price') {
           updated.total = Math.round(updated.quantity * updated.price);
           updated.finalTotal = updated.total - updated.discount;
@@ -156,7 +163,6 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
       description: t.dataSaved,
     });
 
-    // Add new row after saving
     addNewPurchase();
   };
 
@@ -170,28 +176,51 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       
-      if (field === 'discount') {
-        savePurchase(purchaseId);
-        setTimeout(() => setActiveCell({ row: purchases.length, col: 'customerName' }), 100);
+      const fields = ['customerName', 'batteryType', 'quantity', 'price', 'discount'];
+      const currentIndex = fields.indexOf(field);
+      
+      if (currentIndex < fields.length - 1) {
+        // Move to next field in same row
+        const nextField = fields[currentIndex + 1];
+        setActiveCell({ row: rowIndex, col: nextField });
+        setTimeout(() => {
+          const nextInput = inputRefs.current[`${rowIndex}-${nextField}`];
+          if (nextInput) {
+            nextInput.focus();
+          }
+        }, 100);
       } else {
-        const fields = ['customerName', 'batteryType', 'quantity', 'price', 'discount'];
-        const currentIndex = fields.indexOf(field);
-        if (currentIndex < fields.length - 1) {
-          setActiveCell({ row: rowIndex, col: fields[currentIndex + 1] });
-        } else {
-          savePurchase(purchaseId);
-          setTimeout(() => setActiveCell({ row: purchases.length, col: 'customerName' }), 100);
-        }
+        // Save and move to first field of next row
+        savePurchase(purchaseId);
+        setTimeout(() => {
+          setActiveCell({ row: purchases.length, col: 'customerName' });
+          const nextInput = inputRefs.current[`${purchases.length}-customerName`];
+          if (nextInput) {
+            nextInput.focus();
+          }
+        }, 100);
       }
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (rowIndex < purchases.length - 1) {
         setActiveCell({ row: rowIndex + 1, col: field });
+        setTimeout(() => {
+          const nextInput = inputRefs.current[`${rowIndex + 1}-${field}`];
+          if (nextInput) {
+            nextInput.focus();
+          }
+        }, 100);
       }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (rowIndex > 0) {
         setActiveCell({ row: rowIndex - 1, col: field });
+        setTimeout(() => {
+          const nextInput = inputRefs.current[`${rowIndex - 1}-${field}`];
+          if (nextInput) {
+            nextInput.focus();
+          }
+        }, 100);
       }
     }
   };
@@ -231,14 +260,36 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
     });
   };
 
+  const activeNotes = notes.filter(note => !note.completed);
+
   return (
     <div className="h-full flex flex-col">
-      {/* Quick Notes Section */}
-      <div className="mb-6">
-        <QuickNotes language={language} />
-      </div>
-
       <div className="flex-1 p-6 space-y-6">
+        {/* Quick Notes Section */}
+        {activeNotes.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-amber-800 mb-3 flex items-center">
+              <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
+              {t.quickNotes}
+            </h3>
+            <div className="space-y-2">
+              {activeNotes.slice(0, 3).map((note) => (
+                <div key={note.id} className="flex items-center space-x-2 rtl:space-x-reverse text-amber-700">
+                  <Checkbox
+                    checked={note.completed}
+                    onCheckedChange={(checked) => {
+                      // This would update the note in the notes data
+                      console.log(`Toggle note ${note.id}:`, checked);
+                    }}
+                    className="text-amber-600"
+                  />
+                  <span className="text-sm">{note.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Header Controls */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h2 className="text-2xl font-bold text-gray-800">
@@ -280,14 +331,18 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
                     <td className="p-3">
                       <div className="relative">
                         <Input
+                          ref={(el) => inputRefs.current[`${index}-customerName`] = el}
                           placeholder={t.searchCustomer}
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
+                          value={purchase.customerName}
+                          onChange={(e) => {
+                            updatePurchase(purchase.id, 'customerName', e.target.value);
+                            setSearchTerm(e.target.value);
+                          }}
                           onKeyDown={(e) => handleKeyDown(e, index, 'customerName')}
                           className="w-full"
                           autoFocus={activeCell?.row === index && activeCell?.col === 'customerName'}
                         />
-                        {searchTerm && (
+                        {searchTerm && !purchase.saved && (
                           <div className="absolute top-full left-0 right-0 z-10 bg-white border border-gray-200 rounded-b-md shadow-lg max-h-40 overflow-y-auto">
                             {filteredCustomers.length > 0 ? (
                               filteredCustomers.map((customer) => (
@@ -339,6 +394,7 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
                     </td>
                     <td className="p-3">
                       <Input
+                        ref={(el) => inputRefs.current[`${index}-quantity`] = el}
                         type="number"
                         value={purchase.quantity || ''}
                         onChange={(e) => updatePurchase(purchase.id, 'quantity', parseFloat(e.target.value) || 0)}
@@ -349,6 +405,7 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
                     </td>
                     <td className="p-3">
                       <Input
+                        ref={(el) => inputRefs.current[`${index}-price`] = el}
                         type="number"
                         value={purchase.price || ''}
                         onChange={(e) => updatePurchase(purchase.id, 'price', parseFloat(e.target.value) || 0)}
@@ -364,6 +421,7 @@ const DailyPurchases = ({ language, selectedDate }: DailyPurchasesProps) => {
                     </td>
                     <td className="p-3">
                       <Input
+                        ref={(el) => inputRefs.current[`${index}-discount`] = el}
                         type="number"
                         value={purchase.discount || ''}
                         onChange={(e) => updatePurchase(purchase.id, 'discount', parseFloat(e.target.value) || 0)}

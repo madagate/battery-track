@@ -112,7 +112,7 @@ const Statistics = ({ language }: StatisticsProps) => {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 h-full overflow-y-auto">
       <h2 className="text-2xl font-bold text-gray-800">{t.statistics}</h2>
 
       {/* KPI Cards */}
@@ -147,7 +147,7 @@ const Statistics = ({ language }: StatisticsProps) => {
             <CardTitle>{t.monthlyRevenue}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
@@ -165,7 +165,7 @@ const Statistics = ({ language }: StatisticsProps) => {
             <CardTitle>{t.batteryTypes}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie
                   data={batteryTypeData}
@@ -193,7 +193,7 @@ const Statistics = ({ language }: StatisticsProps) => {
             <CardTitle>{t.topCustomers}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <BarChart data={customerData} layout="horizontal">
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
@@ -211,7 +211,7 @@ const Statistics = ({ language }: StatisticsProps) => {
             <CardTitle>{t.dailyTrends}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <LineChart data={dailyTrendsData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="day" />
