@@ -21,7 +21,11 @@ const CustomerPurchaseHistory = ({ customer, language }: CustomerPurchaseHistory
       finalTotal: "الإجمالي النهائي",
       noPurchases: "لا توجد مشتريات مسجلة",
       kg: "كيلو",
-      sar: "ريال"
+      sar: "ريال",
+      totalPurchases: "إجمالي المشتريات",
+      totalAmount: "إجمالي المبلغ",
+      totalQuantity: "إجمالي الكمية",
+      averagePrice: "متوسط السعر"
     },
     en: {
       date: "Date",
@@ -33,7 +37,11 @@ const CustomerPurchaseHistory = ({ customer, language }: CustomerPurchaseHistory
       finalTotal: "Final Total",
       noPurchases: "No purchases recorded",
       kg: "kg",
-      sar: "SAR"
+      sar: "SAR",
+      totalPurchases: "Total Purchases",
+      totalAmount: "Total Amount",
+      totalQuantity: "Total Quantity",
+      averagePrice: "Average Price"
     }
   };
 
@@ -83,23 +91,23 @@ const CustomerPurchaseHistory = ({ customer, language }: CustomerPurchaseHistory
       <div className="bg-gray-50 p-4 rounded-lg">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div>
-            <p className="text-sm text-gray-600">{translations[language].totalPurchases || "Total Purchases"}</p>
+            <p className="text-sm text-gray-600">{t.totalPurchases}</p>
             <p className="text-lg font-bold text-blue-600">{customer.purchases.length}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">{translations[language].totalAmount || "Total Amount"}</p>
+            <p className="text-sm text-gray-600">{t.totalAmount}</p>
             <p className="text-lg font-bold text-green-600">
               {customer.purchases.reduce((sum, p) => sum + p.finalTotal, 0).toLocaleString()} {t.sar}
             </p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">{translations[language].totalQuantity || "Total Quantity"}</p>
+            <p className="text-sm text-gray-600">{t.totalQuantity}</p>
             <p className="text-lg font-bold text-purple-600">
               {customer.purchases.reduce((sum, p) => sum + p.quantity, 0)} {t.kg}
             </p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">{translations[language].averagePrice || "Average Price"}</p>
+            <p className="text-sm text-gray-600">{t.averagePrice}</p>
             <p className="text-lg font-bold text-orange-600">
               {customer.purchases.length > 0 
                 ? Math.round(customer.purchases.reduce((sum, p) => sum + p.price, 0) / customer.purchases.length) 
